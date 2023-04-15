@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2023-04-15T18:00:45.522Z" agent="5.0 (X11)" etag="lMxej-ecpA9dGRSW7zU8" version="20.5.3" type="github" pages="4">
+<mxfile host="app.diagrams.net" modified="2023-04-15T18:06:03.343Z" agent="5.0 (X11)" etag="cOcc07uP5zJ9MeayLslW" version="20.5.3" type="github" pages="4">
   <diagram id="guZE8Qsm1I0V-Gjek5t3" name="Page-4">
     <mxGraphModel dx="868" dy="427" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
@@ -43,8 +43,8 @@
         <mxCell id="_o-T06rqC8xUBpIjH-js-13" value="Secondes" style="text;html=1;resizable=0;autosize=1;align=center;verticalAlign=middle;points=[];fillColor=none;strokeColor=none;rounded=0;strokeWidth=2;fontColor=#051742;" vertex="1" parent="1">
           <mxGeometry x="345" y="300" width="80" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="_o-T06rqC8xUBpIjH-js-14" value="Nombre de requêtes" style="text;html=1;resizable=0;autosize=1;align=center;verticalAlign=middle;points=[];fillColor=none;strokeColor=none;rounded=0;strokeWidth=2;fontColor=#051742;" vertex="1" parent="1">
-          <mxGeometry x="55" y="150" width="130" height="30" as="geometry" />
+        <mxCell id="_o-T06rqC8xUBpIjH-js-14" value="Nb requêtes" style="text;html=1;resizable=0;autosize=1;align=center;verticalAlign=middle;points=[];fillColor=none;strokeColor=none;rounded=0;strokeWidth=2;fontColor=#051742;" vertex="1" parent="1">
+          <mxGeometry x="110" y="150" width="90" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
