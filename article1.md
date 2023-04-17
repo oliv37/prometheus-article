@@ -1,6 +1,6 @@
 # Découverte de Prometheus
 
-Prometheus est un outil de surveillance applicative très connu dans le monde de l'observabilité.
+Prometheus est un outil de surveillance applicative très connu dans le monde de l'observabilité.<br>
 Je présenterai dans cet article son fonctionnement global en insistant sur la partie requêtage de données avec le langage PromQL.
 
 <br>
@@ -10,7 +10,8 @@ Je présenterai dans cet article son fonctionnement global en insistant sur la p
 <br>
 
 Prometheus fonctionne en mode `Pull`, il collecte les métriques à interval régulier auprès des applications à surveiller.<br>
-Ces métriques sont enregistrées dans une base de données temporelles. Le langage **PromQL** permettra de requêter les données par le biais d'une API Rest.
+Ces métriques sont ensuite enregistrées dans une base de données temporelles.<br>
+Le langage **PromQL** permettra de requêter les données par le biais d'une API Rest.
 
 On retrouve dans Prometheus :
 
@@ -21,15 +22,16 @@ On retrouve dans Prometheus :
 - une interface graphique pour visualiser les données.
 
 Il est recommandé d'utiliser **Grafana** pour l'affichage des données. 
-L'interface minimaliste de Prometheus sera utilisée uniquement dans la phase de développement pour tester les requêtes PromQL.
+L'interface minimaliste de Prometheus sera utilisée uniquement dans la phase de développement pour les tests des requêtes PromQL.
 
 ## Les métriques
 
-Une métrique est une mesure numérique d'un élement de l'application, par exemple la quantité de mémoire RAM utilisée. Elles se déclinent  principalement en quatre types.
+Une métrique est une mesure numérique d'un élement de l'application, par exemple la quantité de mémoire RAM utilisée. <br>
+Elles se déclinent  principalement en quatre types.
 
 ### Compteur
 
-La valeur d'un compteur peut **uniquement augmenter**.
+La valeur d'un compteur peut **uniquement augmenter** au cours du temps.
 
 <u>Exemple</u> : Nombre de requêtes HTTP executées par un serveur web.
 
@@ -63,7 +65,7 @@ Un histogramme compte le nombre de données selon certaines catégories prédéf
 
 <br>
 
-Ici, 10 requêtes ont un temps d'exécution compris entre 0,5s et 1s.
+Ici, 10 requêtes ont un temps d'exécution compris entre 0,5 et 1 seconde.
 
 Le nombre de requêtes de chaque catégorie augmentera au cours du temps. Comme pour les compteurs, cette valeur ne pourra pas diminuer.
 
@@ -83,16 +85,16 @@ Au vu du dernier résultat, on déduit que 99% des requêtes s'exécutent dans u
 
 ## Format des métriques
 
-Les applications à surveiller doivent exposer leurs métriques par le biais d'un service HTTP de type GET.<br> 
+Les applications doivent exposer leurs métriques par le biais d'un service HTTP de type GET.<br> 
 Ce service retournera l'intégralité des métriques dans un format texte compréhensible par Prometheus.
 
 <b>Counter</b>
 
 ![Résumé](./img/compteur_format.png)
 
-Chaque ligne (excepté les en-têtes) définit une nouvelle série temporelle qui sera identifiée par le nom de la métrique et les libellés de type clé-valeur.
+Chaque ligne (excepté les en-têtes) définit une nouvelle série temporelle qui sera identifiée par le **nom de la métrique** et les **libellés** de type clé-valeur.
 
-Par convention, le nom d'un compteur se terminera par `_total`.
+Par convention, le nom d'un compteur se terminera toujours par `_total`.
 
 <b>Jauge</b>
 
@@ -114,4 +116,3 @@ Il est donc possible grâce aux exporters d'observer une application existante s
 On retrouve par exemple le `Node Exporter` qui expose les métriques d'un système Linux, le `JMX Exporter` qui expose les métriques d'une application Java en se basant sur les données disponibles via JMX.
 
 Notons que le serveur Prometheus expose lui-même un ensemble de métriques accessibles via le path `/metrics`, permettant ainsi d'observer son fonctionnement.
-
