@@ -1,7 +1,6 @@
 # Découverte de Prometheus
 
-Prometheus est un outil de surveillance applicative très connu dans le monde de l'observabilité.<br>
-Je présenterai dans cet article son fonctionnement global en insistant sur la partie requêtage de données avec le langage PromQL.
+Prometheus est un outil de surveillance applicative très connu dans le monde de l'observabilité.
 
 <br>
 
@@ -31,7 +30,7 @@ Elles se déclinent  principalement en quatre types.
 
 **Compteur**
 
-La valeur d'un compteur peut **uniquement augmenter** au cours du temps.
+La valeur d'un compteur peut **uniquement être incrémentée**.
 
 <u>Exemple</u> : Nombre de requêtes HTTP executées par un serveur web.
 
@@ -45,7 +44,7 @@ La valeur d'un compteur peut **uniquement augmenter** au cours du temps.
 
 La valeur d'une jauge peut **augmenter ou diminuer**.
 
-<u>Exemple</u> : Température d'un processeur.
+<u>Exemple</u> : Température d'un processeur en degré celcius.
 
 <br>
 
@@ -67,11 +66,11 @@ Un histogramme compte le nombre de données selon certaines catégories prédéf
 
 10 requêtes ont un temps d'exécution compris entre 0,5 et 1 seconde.
 
-Le nombre de requêtes de chaque catégorie augmentera au cours du temps. Comme pour les compteurs, cette valeur ne pourra pas diminuer.
+Le nombre de requêtes de chaque catégorie augmentera au cours du temps. Comme pour un compteur, cette valeur ne pourra pas diminuer.
 
 **Résumé**
 
-Un résumé permet de déterminer la valeur de certains quantiles.
+Un résumé permet de calculer la valeur de certains quantiles.
 
 <u>Exemple</u> : Durée d'exécution des requêtes HTTP.
 
@@ -81,7 +80,16 @@ Un résumé permet de déterminer la valeur de certains quantiles.
 
 <br>
 
-Au vu du dernier résultat, on déduit que le temps d'exécution d'une requête n'excède pas 650ms pour 99% d'entre elles.
+Au vu du dernier résultat, on déduit que le temps d'exécution d'une requête est inférieur ou égal à 650ms pour au moins 99% d'entre elles.
+
+Le quantile de niveau q (0 <= q <= 1) d'une série ordonnée d'éléments permet d'évaluer la valeur d'un élément à certain rang de la série.<br>
+
+Par exemple, le quantile 0,5 également appelé médiane permet de séparer une série en deux parties. Sa valeur, contrairement à la moyenne, ne sera pas affectée par des valeurs disproportionnées présentes dans le jeu de données.
+
+<br>
+
+![Médiane](./img/mediane.png)
+
 
 ## Format des métriques
 
@@ -92,7 +100,7 @@ Ce service retournera l'intégralité des métriques dans un format texte compr�
 
 ![Compteur format](./img/compteur_format.png)
 
-Chaque ligne (excepté les en-têtes) définit une nouvelle série temporelle qui est identifiée par le **nom de la métrique** et des **libellés** de type clé-valeur.
+Chaque ligne (excepté les en-têtes) définit une nouvelle série temporelle qui est identifiée par son **nom** et éventuellement des **libellés** de type clé-valeur. Une métrique correspond donc à un ensemble de séries temporelles.
 
 Par convention, le nom d'un compteur se terminera toujours par `_total`.
 
@@ -100,11 +108,11 @@ Par convention, le nom d'un compteur se terminera toujours par `_total`.
 
 ![Jauge format](./img/jauge_format.png)
 
-La première jauge `process_resident_memory_size` indique la taille en mémoire occupée par le processus. 
+La première jauge `process_resident_memory_size` indique la taille mémoire occupée par le processus. Cette valeur pourra augmenter ou diminuer.
 
-Une jauge peut également servir à stocker une constante, c'est le cas de `process_start_time_seconds` qui indique la date de démarrage du processus. Cette valeur ne bougera pas durant toute la durée de vie du processus.
+Une jauge peut également servir à stocker une constante, c'est le cas de `process_start_time_seconds` qui indique la date de démarrage du processus.
 
-Une métrique doit obligatoirement avoir un nom. Elle peut en revanche ne pas déclarer de libellés, c'est le cas des deux précédentes jauges.   
+Une métrique doit obligatoirement avoir un nom. Elle peut en revanche ne pas avoir de libellés, c'est le cas pour ces deux jauges.   
 
 <b>Histogramme</b>
 
@@ -112,16 +120,14 @@ Une métrique doit obligatoirement avoir un nom. Elle peut en revanche ne pas d�
 
 Un histogramme est composé de plusieurs séries temporelles. 
 
-On a dans un premier temps les séries liées aux buckets (se terminant par `_bucket`) qui correspondent aux catégories de l'histogramme. Chaque bucket contient obligatoirement le libellé `le`.<br>
+On a dans un premier temps les séries correspondantes aux catégories de l'histogramme. Leur nom se termine par `_bucket`. Chacune de ces séries contient obligatoirement le libellé `le` (lower or equal).<br>
 
-Le premier bucket nous indique que 309 requêtes ont chacune eu une durée d'exécution inférieure ou égale 0,1s.<br>
+La première catégorie nous indique que 309 requêtes ont eu une durée d'exécution inférieure ou égale 0,1s.<br>
 
-Les valeurs présentent dans ces buckets sont cummulatives, on en déduit que 2 requêtes ont eu une durée d'exécution comprise entre 0,1s et 0,2s.<br>
-Le dernier bucket possède obligatoirement le libellé `le="+Inf"` représentant ainsi la dernière catégorie.
+Les valeurs présentent dans ces catgégores sont cummulatives, on en déduit que 2 requêtes ont eu une durée d'exécution comprise entre 0,1s et 0,2s.<br>
+La derniere catégorie possède obligatoirement le libellé `le="+Inf"`.
 
-On trouve ensuite deux séries qui correspondent à la somme et au nombre des valeurs enregistrées. 311 requêtes ont été exécutées pour une durée totale de 1,55s, ce qui nous permet de calculer le temps moyen d'exécution d'une requête.
-
-Les valeurs de ces séries pourront uniquement augmenter au cours du temps. C'est le même principe que pour un compteur.
+On trouve enfin deux séries contenant la somme et le nombre des valeurs enregistrées. 311 requêtes ont été exécutées pour une durée totale de 1,55s. Ces données nous permet de calculer la moyenne.
 
 Chaque service (identifié par le libellé `handler`) contiendra ce même ensemble de séries. J'ai affiché ici uniquement celles liées au service `/metrics`.
 
@@ -129,26 +135,29 @@ Chaque service (identifié par le libellé `handler`) contiendra ce même ensemb
 
 ![Résumé format](./img/resume_format.png)
 
-Les valeurs des quantiles sont ici toutes très proches de 15 étant donné que l'interval entre chaque appel au service de récupération des métriques est configuré à 15 secondes.
+Chaque série liée au calcul d'un quantile possède le libellé `quantile`. Prometheus est configuré par défaut pour récupérer les métriques toutes les 15 secondes, les valeurs des quantiles pour cet interval sont donc très proches de 15.
 
-Comme pour l'histogramme, les 2 dernières séries correspondent à la somme et au nombre de valeurs enregistrées.
+Comme pour l'histogramme, deux séries contiennent la somme et le nombre de valeurs enregistrées.
 
-Les quantiles sont calculés côté client. En effet pour déterminer leur valeur, nous avons en théorie besoin de l'ensemble des données enregistrées. Prometheus fonctionne en mode `Pull`, l'application cliente n'a aucun moyen de le contacter pour lui transmettre chaque nouvelle donnée.<br> 
+Les quantiles sont calculés par l'application cliente à chaque nouvel enregistrement.<br> 
+Pour obtenir leur valeur exacte, il faudrait garder en mémoire l'intégralité du jeu de données, ce qui est inenvisageable pour une application ayant une durée de vie importante.<br> 
 
-C'est donc l'application elle-même qui pour chaque nouvelle donnée va recalculer la valeur des différents quantiles.<br>
-
-Un algorithme sera utilisé pour éliminer des données au cours du temps. La sauvegarde de l'intégralité de ces données deviendrait problématiqué à partir d'un certain temps. Un nombre restreint de données est ainsi sauvegardé en mémoire permettant ainsi le calcul des quantiles en intégrant une marge d'erreur.
+Un algorithme est utilisé pour éliminer certaines données au fil du temps. Les calculs des quantiles sont donc effectués en intégrant une marge d'erreur.
 
 ## Exposition des métriques
 
 Pour obtenir les métriques d'une application, on peut :
 
-- utiliser un exporter qui va venir se greffer à celle-ci et exposer des métriques utiles à son observation.
+- utiliser un exporter qui va venir s'intégrer à celle-ci.
 
-- déclarer ses propres métriques en ajoutant du code. Pour cela, Prometheus fournit une librarie cliente disponible dans plusieurs langages.
+- déclarer ses propres métriques en ajoutant du code à l'application.<br> Prometheus fournit des libraries dans plusieurs langages pour déclarer et exporter des métriques.
 
-Il est donc possible grâce aux exporters d'observer une application existante sans avoir à ajouter le moindre code.
+Les exporters permettent d'observer un système existant sans avoir à ajouter le moindre code.
 
-On retrouve par exemple le `Node Exporter` qui expose les métriques d'un système Linux, le `JMX Exporter` qui expose les métriques d'une application Java en se basant sur les données disponibles via JMX.
+* `Node exporter` expose les métriques d'un système Linux.
+* `JMX exporter` expose les métriques d'une application Java en se basant sur les données disponibles via JMX.
+* `PostgreSQL exporter` expose les métriques d'une base PostgreSQL
 
-Notons que le serveur Prometheus expose lui-même des métriques accessibles via le path `/metrics`.
+À noter que le serveur Prometheus expose des métriques, il peut donc s'observer lui-même.
+
+![Résumé format](./img/exporter.png)
