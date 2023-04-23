@@ -1,5 +1,7 @@
 # Découverte de Prometheus
 
+## Introduction
+
 Prometheus est un outil de surveillance applicative très connu dans le monde de l'observabilité.
 
 <br>
@@ -8,7 +10,7 @@ Prometheus est un outil de surveillance applicative très connu dans le monde de
 
 <br>
 
-Prometheus fonctionne en mode `Pull`, il collecte les métriques à interval régulier auprès des applications à surveiller.<br>
+Prometheus fonctionne en mode `Pull`, il collecte les métriques à intervalle régulier auprès des applications à surveiller.<br>
 Ces métriques sont ensuite enregistrées dans une base de données temporelles.<br>
 Le langage **PromQL** permettra de requêter les données par le biais d'une API Rest.
 
@@ -23,7 +25,7 @@ On retrouve dans Prometheus :
 Il est recommandé d'utiliser **Grafana** pour l'affichage des données. 
 L'interface minimaliste de Prometheus sera utilisée uniquement dans la phase de développement pour tester des requêtes PromQL.
 
-## Les métriques
+## Types de métriques
 
 Une métrique est une mesure numérique d'un élement de l'application, par exemple la quantité de mémoire RAM utilisée. <br>
 Elles se déclinent  principalement en quatre types.
@@ -80,9 +82,10 @@ Un résumé permet de calculer la valeur de certains quantiles.
 
 <br>
 
-Au vu du dernier résultat, on déduit que le temps d'exécution d'une requête est inférieur ou égal à 650ms pour au moins 99% d'entre elles.
+Au vu du dernier résultat, on déduit que le temps d'exécution d'une requête est inférieur ou égal à 650ms pour au moins 99% d'entre elles. <br>
+Le temps d'exécution médian est égal à 189ms.
 
-Le quantile de niveau q (0 <= q <= 1) d'une série ordonnée d'éléments permet d'évaluer la valeur d'un élément à certain rang de la série.<br>
+Un quantile de rang q (0 <= q <= 1) d'une série ordonnée d'éléments permet d'évaluer la valeur d'un élément à un rang donné.<br>
 
 Par exemple, le quantile 0,5 également appelé médiane permet de séparer une série en deux parties. Sa valeur, contrairement à la moyenne, ne sera pas affectée par des valeurs disproportionnées présentes dans le jeu de données.
 
@@ -135,7 +138,7 @@ Chaque service (identifié par le libellé `handler`) contiendra ce même ensemb
 
 ![Résumé format](./img/resume_format.png)
 
-Chaque série liée au calcul d'un quantile possède le libellé `quantile`. Prometheus est configuré par défaut pour récupérer les métriques toutes les 15 secondes, les valeurs des quantiles pour cet interval sont donc très proches de 15.
+Chaque série liée au calcul d'un quantile possède le libellé `quantile`. Prometheus est configuré par défaut pour récupérer les métriques toutes les 15 secondes, les valeurs des quantiles pour cet intervalle sont donc très proches de 15.
 
 Comme pour l'histogramme, deux séries contiennent la somme et le nombre de valeurs enregistrées.
 
@@ -150,7 +153,7 @@ Pour obtenir les métriques d'une application, on peut :
 
 - utiliser un exporter qui va venir s'intégrer à celle-ci.
 
-- déclarer ses propres métriques en ajoutant du code à l'application.<br> Prometheus fournit des libraries dans plusieurs langages pour déclarer et exporter des métriques.
+- déclarer ses propres métriques en ajoutant du code à l'application.<br> Prometheus fournit des libraries dans plusieurs langages pour les créer et les exporter.
 
 Les exporters permettent d'observer un système existant sans avoir à ajouter le moindre code.
 
@@ -160,4 +163,54 @@ Les exporters permettent d'observer un système existant sans avoir à ajouter l
 
 À noter que le serveur Prometheus expose des métriques, il peut donc s'observer lui-même.
 
-![Résumé format](./img/exporter.png)
+![Exporteur](./img/exporteur.png)
+
+## Collecte des métriques
+
+Le fichier de configuration `prometheus.yml` permet de déclarer les applications à observer.
+
+```yaml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "prometheus"
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+    static_configs:
+      - targets: ["localhost:9090"]
+  - job_name: "node"
+    static_configs:
+      - targets: ["localhost:9100"]
+```
+
+Le `job_name` représente le nom de l'application à observer, qui peut être déployée sur plusieurs instances listées dans le tableau `targets`.
+
+Prometheus collectera toutes les 15 secondes :
+- ses propres métriques => `http://localhost:9090/metrics` 
+- les métriques du serveur linux => `http://localhost:9100/metrics`
+
+Pour une utilisation plus poussée, il sera plus opportun d'utiliser la découverte de service afin de récupérer la liste des instances dynamiquement. 
+
+Prometheus enregistre les données liées aux métriques dans sa base de données sous forme de séries temporelles.<br>
+
+Chaque ligne (hors commentaire) renvoyée par le service de récupération des métriques donne lieu à une nouvelle série temporelle. Prometheus ajoutera automatiquement les libellés `node` et `instance` à chaque série.
+
+Ci-dessous, un exemple de compteur retourné par Prometheus :
+
+```
+# HELP prometheus_http_requests_total Counter of HTTP requests.
+# TYPE prometheus_http_requests_total counter
+prometheus_http_requests_total{code="200",handler="/-/ready"} 3
+prometheus_http_requests_total{code="200",handler="/api/v1/query"} 1
+prometheus_http_requests_total{code="200",handler="/graph"} 1
+prometheus_http_requests_total{code="200",handler="/metrics"} 98
+prometheus_http_requests_total{code="302",handler="/"} 1
+```
+Ce compteur se décline sous la forme de 5 séries temporelles. Toutes les 15 secondes un nouvel enregistrement (représenté par une date en millisecondes et une valeur) sera ajouté à chaque série.<br>
+
+<u>Représentation d'une série temporelle :</u>
+
+![Série temporelle](./img/serie_temporelle.png)
+
+Il est primordial de définir un intervalle de temps assez court pour la récupération des métriques afin de ne pas passer à côté certaines valeurs importantes, ce qui est particulèrement vrai pour une jauge dont la valeur peut augmenter ou diminuer.
