@@ -184,19 +184,15 @@ scrape_configs:
       - targets: ["localhost:9100"]
 ```
 
-Le `job_name` représente le nom de l'application à observer, qui peut être déployée sur plusieurs instances listées dans le tableau `targets`.
+`job_name` correspond au nom de l'application qui peut être déployée sur plusieurs instances présentes dans le champ `targets`.
 
-Prometheus collectera toutes les 15 secondes :
+Dans cet exemple, Prometheus collectera toutes les 15 secondes :
 - ses propres métriques => `http://localhost:9090/metrics` 
-- les métriques du serveur linux => `http://localhost:9100/metrics`
+- les métriques d'un serveur linux => `http://localhost:9100/metrics`
 
-Pour une utilisation plus poussée, il sera plus opportun d'utiliser la découverte de service afin de récupérer la liste des instances dynamiquement. 
+Pour une utilisation plus poussée, il serait plus adéquat d'utiliser la découverte de service pour récupérer la liste des instances dynamiquement. 
 
-Prometheus enregistre les données liées aux métriques dans sa base de données sous forme de séries temporelles.<br>
-
-Chaque ligne (hors commentaire) renvoyée par le service de récupération des métriques donne lieu à une nouvelle série temporelle. Prometheus ajoutera automatiquement les libellés `node` et `instance` à chaque série.
-
-Ci-dessous, un exemple de compteur retourné par Prometheus :
+Prometheus enregistre les données retournées par le services http dans sa base sous forme de séries temporelles.<br>
 
 ```
 # HELP prometheus_http_requests_total Counter of HTTP requests.
@@ -207,10 +203,26 @@ prometheus_http_requests_total{code="200",handler="/graph"} 1
 prometheus_http_requests_total{code="200",handler="/metrics"} 98
 prometheus_http_requests_total{code="302",handler="/"} 1
 ```
-Ce compteur se décline sous la forme de 5 séries temporelles. Toutes les 15 secondes un nouvel enregistrement (représenté par une date en millisecondes et une valeur) sera ajouté à chaque série.<br>
+
+Chaque ligne (hors commentaire) représente une nouvelle série temporelle, le compteur ci-dessus en aura donc 5. Prometheus ajoute automatiquement les libellés `node` et `instance` à chaque série.
+
+Toutes les 15 secondes un nouvel enregistrement (représenté par une date en millisecondes et une valeur) sera sauvegardé pour chaque série.<br>
 
 <u>Représentation d'une série temporelle :</u>
 
 ![Série temporelle](./img/serie_temporelle.png)
 
-Il est primordial de définir un intervalle de temps assez court pour la récupération des métriques afin de ne pas passer à côté certaines valeurs importantes, ce qui est particulèrement vrai pour une jauge dont la valeur peut augmenter ou diminuer.
+Concernant la récupération des métriques, il est primordial de définir un intervalle de temps assez court afin de ne pas passer à côté certaines valeurs importantes, ce qui est particulèrement vrai pour une jauge dont la valeur peut augmenter ou diminuer.
+
+## Lecture des métriques
+
+La lecture des données est essentielle pour évaluer la santé de nos applications. C'est la partie la plus complexe à appréhender, le langage PromQL (Prometheus Query Language) bien que très puissant reste assez difficile à maîtriser.
+
+L'évaluation de requêtes PromQL s'effectuera via des appels http ciblant l'API Rest exposée par Prometheus.
+
+![API Prometheus](./img/prometheus_api.png)
+
+Comme évoqué en début d'article, une interface accessible à l'adresse `http://localhost:9090/graph` permet de tester des requêtes PromQL. Chaque soumission déclenche un appel http à destination de l'API Rest.
+
+![Page d'accueil Prometheus](./img/prometheus_accueil.png)
+![Appel réseau Prometheus](./img/prometheus_reseau.png)
