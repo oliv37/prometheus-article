@@ -34,7 +34,7 @@ Elles se déclinent  principalement en quatre types.
 
 La valeur d'un compteur peut **uniquement être incrémentée**.
 
-<u>Exemple</u> : Nombre de requêtes HTTP executées par un serveur web.
+<ins>Exemple</ins> : Nombre de requêtes HTTP executées par un serveur web.
 
 <br>
 
@@ -46,7 +46,7 @@ La valeur d'un compteur peut **uniquement être incrémentée**.
 
 La valeur d'une jauge peut **augmenter ou diminuer**.
 
-<u>Exemple</u> : Température d'un processeur en degré celcius.
+<ins>Exemple</ins> : Température d'un processeur en degré celcius.
 
 <br>
 
@@ -58,7 +58,7 @@ La valeur d'une jauge peut **augmenter ou diminuer**.
 
 Un histogramme compte le nombre de données selon certaines catégories prédéfinies.
 
-<u>Exemple</u> : Durée d'exécution des requêtes HTTP.
+<ins>Exemple</ins> : Durée d'exécution des requêtes HTTP.
 
 <br>
 
@@ -74,7 +74,7 @@ Le nombre de requêtes de chaque catégorie augmentera au cours du temps. Comme 
 
 Un résumé permet de calculer la valeur de certains quantiles.
 
-<u>Exemple</u> : Durée d'exécution des requêtes HTTP.
+<ins>Exemple</ins> : Durée d'exécution des requêtes HTTP.
 
 <br>
 
@@ -208,7 +208,7 @@ Chaque ligne (hors commentaire) représente une nouvelle série temporelle, le c
 
 Toutes les 15 secondes un nouvel enregistrement (représenté par une date en millisecondes et une valeur) sera sauvegardé pour chaque série.<br>
 
-<u>Représentation d'une série temporelle :</u>
+<ins>Représentation d'une série temporelle :</ins>
 
 ![Série temporelle](./img/serie_temporelle.png)
 
@@ -230,13 +230,13 @@ Le service `query` évalue une requête pour une date donnée.
 
 Il existe principalement deux types de requêtes dans Prometheus.
 
-<b>1) <u>requête sur un moment précis</u></b> (`instant_query`)
+<b>1) <ins>requête sur un moment précis</ins></b> (`instant_query`)
 
 ![Instant Query](./img/instant_query.png)
 
 Le résultat contient une seule valeur par série. On choisit l'élément le plus récent par rapport à la date d'évaluation. 
 
-<u>Appel REST</u>
+<ins>Appel REST</ins>
 
 **GET /api/query**
 * query=prometheus_http_requests_total
@@ -280,18 +280,18 @@ Le résultat contient une seule valeur par série. On choisit l'élément le plu
 
 Le temps associé à chaque valeur sera égal à la date d'évaluation, la date réelle d'enregistrement n'est pas retournée. Toutes les valeurs présentes dans le résultat de la requête auront donc le même horadatage.
 
-<u>Affichage dans Prometheus</u> (`http://localhost:9090/graph`)
+<ins>Affichage dans Prometheus</ins> (`http://localhost:9090/graph`)
 
 ![Affichage Prometheus intant query](./img/instant_query_prometheus.png)
 ![Appel réseau instant query](./img/instant_query_network.png)
 
-<b>2) <u>requête sur un intervalle de temps</u></b>  (`range_query`)
+<b>2) <ins>requête sur un intervalle de temps</ins></b>  (`range_query`)
 
 ![Range Query](./img/range_query.png)
 
-Le résultat contient pour chaque série l'ensemble des valeurs présentes sur un intervalle de temps donné.
+Le résultat contient pour chaque série l'ensemble des valeurs présentes dans l'intervalle de temps donné.
 
-<u>Appel REST</u>
+<ins>Appel REST</ins>
 
 **GET /api/query**
 * query=prometheus_http_requests_total [1m]
@@ -324,21 +324,21 @@ Le résultat contient pour chaque série l'ensemble des valeurs présentes sur u
 }
 </pre>
 
-`values` est un tableau à deux dimensions, contenant un ensemble de tuple sous la forme `[date, valeur]`. Cette fois-ci, les dates associées aux valeurs correspondent aux dates d'enregistrement présentes en base.
+`values` est un tableau à deux dimensions contenant une liste de tuple sous la forme `[date, valeur]`. Cette fois-ci, les dates associées aux valeurs correspondent aux dates d'enregistrement présentes en base.
 
-<u>Affichage dans Prometheus</u> (`http://localhost:9090/graph`)
+<ins>Affichage dans Prometheus</ins> (`http://localhost:9090/graph`)
 
 ![Affichage Prometheus range query](./img/range_query_prometheus.png)
 ![Appel réseau range query](./img/range_query_network.png)
 
-#### <u>Filtre</u>
+#### <ins>Filtre</ins>
 
 **prometheus_http_requests_total{handler="/metrics", code="200", job=~".\*theus"}**
 
 ```
 prometheus_http_requests_total{code="200", handler="/metrics", instance="localhost:9090", job="prometheus"} 11
 ```
-#### <u>Aggrégation</u>
+#### <ins>Aggrégation</ins>
 
 **count(prometheus_http_requests_total)**
 ```
