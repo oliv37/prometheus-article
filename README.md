@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Prometheus est un outil de surveillance applicative très connu dans le monde de l'observabilité.
+Prometheus est un outil de surveillance applicative très connu dans le domaine de l'observabilité.
 
 <br>
 
@@ -10,11 +10,11 @@ Prometheus est un outil de surveillance applicative très connu dans le monde de
 
 <br>
 
-Prometheus fonctionne en mode `Pull`, il collecte les métriques à intervalle régulier auprès des applications à surveiller.<br>
-Ces métriques sont ensuite enregistrées dans une base de données temporelles.<br>
-Le langage **PromQL** permettra de requêter les données par le biais d'une API Rest.
+L'outil fonctionne en mode `Pull`, c'est à dire qu'il collecte les métriques à intervalle régulier auprès des applications à surveiller. Ces métriques sont ensuite enregistrées dans une base de données temporelles.
 
-On retrouve dans Prometheus :
+Le langage de requête **PromQL** sera utilisé pour requêter les données par le biais d'une API Rest.
+
+Globalement, Prometheus regroupe :
 
 - un outil pour collecter les métriques.
 - une base de données temporelles (Time Series DataBase).
@@ -22,13 +22,13 @@ On retrouve dans Prometheus :
 - une API Rest pour exécuter les requêtes et gérer la plateforme.
 - une interface graphique pour visualiser les données.
 
-Il est recommandé d'utiliser **Grafana** pour l'affichage des données. 
-L'interface minimaliste de Prometheus sera utilisée uniquement dans la phase de développement pour tester des requêtes PromQL.
+Il est recommandé d'utiliser [**Grafana**](https://grafana.com/grafana/) pour l'affichage des données. 
+L'interface minimaliste de Prometheus doit être consacrée uniquement aux tests de validité des requêtes PromQL.
 
 ## Types de métriques
 
-Une métrique est une mesure numérique d'un élement de l'application, par exemple la quantité de mémoire RAM utilisée. <br>
-Elles se déclinent  principalement en quatre types.
+Une métrique est une mesure numérique d'un élement applicatif, par exemple la quantité de mémoire RAM utilisée. <br>
+Elles se déclinent principalement en quatre types.
 
 **Compteur**
 
@@ -56,7 +56,7 @@ La valeur d'une jauge peut **augmenter ou diminuer**.
 
 **Histogramme**
 
-Un histogramme compte le nombre de données selon certaines catégories prédéfinies.
+Un histogramme compte le nombre de données par catégories.
 
 <ins>Exemple</ins> : Durée d'exécution des requêtes HTTP.
 
@@ -68,7 +68,7 @@ Un histogramme compte le nombre de données selon certaines catégories prédéf
 
 10 requêtes ont un temps d'exécution compris entre 0,5 et 1 seconde.
 
-Le nombre de requêtes de chaque catégorie augmentera au cours du temps. Comme pour un compteur, cette valeur ne pourra pas diminuer.
+Comme pour un compteur, le nombre de requêtes de chaque catégorie pourra uniquement augmenter au cours du temps.
 
 **Résumé**
 
@@ -82,12 +82,10 @@ Un résumé permet de calculer la valeur de certains quantiles.
 
 <br>
 
-Au vu du dernier résultat, on déduit que le temps d'exécution d'une requête est inférieur ou égal à 650ms pour au moins 99% d'entre elles. <br>
-Le temps d'exécution médian est égal à 189ms.
+Au vu du dernier résultat, on déduit que le temps d'exécution d'une requête est inférieur ou égal à 650ms pour au moins 99% d'entre elles. Le temps d'exécution médian est quant à lui égal à 189ms.
 
-Un quantile de rang q (0 <= q <= 1) d'une série ordonnée d'éléments permet d'évaluer la valeur d'un élément à un rang donné.<br>
-
-Par exemple, le quantile 0,5 également appelé médiane permet de séparer une série en deux parties. Sa valeur, contrairement à la moyenne, ne sera pas affectée par des valeurs disproportionnées présentes dans le jeu de données.
+Pour rappel, un quantile de rang q (0 <= q <= 1) d'une série ordonnée d'éléments permet d'évaluer la valeur d'un élément pour un rang donné.<br>
+Par exemple, le quantile 0,5 également appelé médiane permet de séparer une série en deux parties. Sa valeur, contrairement à la moyenne, ne sera pas affectée par des valeurs disproportionnées présentes dans un jeu de données.
 
 <br>
 
@@ -97,13 +95,13 @@ Par exemple, le quantile 0,5 également appelé médiane permet de séparer une 
 ## Format des métriques
 
 Les applications doivent exposer leurs métriques par le biais d'un service HTTP de type GET.<br> 
-Ce service retournera l'intégralité des métriques dans un format texte compréhensible par Prometheus.
+Ce service retourne l'intégralité des métriques dans un format texte compréhensible par Prometheus.
 
 <b>Compteur</b>
 
 ![Compteur format](./img/compteur_format.png)
 
-Chaque ligne (excepté les en-têtes) définit une nouvelle série temporelle qui est identifiée par son **nom** et éventuellement des **libellés** de type clé-valeur. Une métrique correspond donc à un ensemble de séries temporelles.
+Chaque ligne (sauf les en-têtes) définit une série temporelle identifiée par son **nom** et des **libellés** de type clé-valeur. Une métrique correspond donc à un ensemble de séries temporelles.
 
 Par convention, le nom d'un compteur se terminera toujours par `_total`.
 
@@ -111,11 +109,11 @@ Par convention, le nom d'un compteur se terminera toujours par `_total`.
 
 ![Jauge format](./img/jauge_format.png)
 
-La première jauge `process_resident_memory_size` indique la taille mémoire occupée par le processus. Cette valeur pourra augmenter ou diminuer.
+La première jauge `process_resident_memory_size` indique la taille mémoire occupée par le processus. Cette valeur peut augmenter ou diminuer au fil du temps.
 
-Une jauge peut également servir à stocker une constante, c'est le cas de `process_start_time_seconds` qui indique la date de démarrage du processus.
+On peut également se servir d'une jauge pour définir une constante, c'est le cas de `process_start_time_seconds` qui indique la date de démarrage du processus. Cette donnée n'évolue pas tant que l'application ne redémarre pas.
 
-Une métrique doit obligatoirement avoir un nom. Elle peut en revanche ne pas avoir de libellés, c'est le cas pour ces deux jauges.   
+Une métrique doit obligatoirement avoir un nom. Elle peut en revanche ne pas avoir de libellé, c'est le cas pour ces deux jauges. 
 
 <b>Histogramme</b>
 
@@ -123,51 +121,47 @@ Une métrique doit obligatoirement avoir un nom. Elle peut en revanche ne pas av
 
 Un histogramme est composé de plusieurs séries temporelles. 
 
-On a dans un premier temps les séries correspondantes aux catégories de l'histogramme. Leur nom se termine par `_bucket`. Chacune de ces séries contient obligatoirement le libellé `le` (lower or equal).<br>
-
-La première catégorie nous indique que 309 requêtes ont eu une durée d'exécution inférieure ou égale 0,1s.<br>
-
-Les valeurs présentent dans ces catgégores sont cummulatives, on en déduit que 2 requêtes ont eu une durée d'exécution comprise entre 0,1s et 0,2s.<br>
+Premièrement, on a les séries correspondantes aux différentes catégories de l'histogramme. Leur nom se termine par `_bucket`. Chacune de ces séries contient obligatoirement le libellé `le` (lower or equal).<br>
+La première catégorie indique que 309 requêtes ont eu une durée d'exécution inférieure ou égale 0,1s.<br>
+Les valeurs présentent de chaque catégorie sont cummulatives, on en déduit que 2 requêtes ont eu une durée d'exécution comprise entre 0,1s et 0,2s.<br>
 La derniere catégorie possède obligatoirement le libellé `le="+Inf"`.
 
-On trouve enfin deux séries contenant la somme et le nombre des valeurs enregistrées. 311 requêtes ont été exécutées pour une durée totale de 1,55s. Ces données nous permet de calculer la moyenne.
+On trouve ensuite deux séries correspondantes à la somme et au nombre de valeurs enregistrées. 311 requêtes ont été exécutées pour une durée totale de 1,55s. Cela permet de calculer la moyenne.
 
-Chaque service (identifié par le libellé `handler`) contiendra ce même ensemble de séries. J'ai affiché ici uniquement celles liées au service `/metrics`.
+Chaque service (identifié par le libellé `handler`) contiendra ce même ensemble de séries. J'ai affiché ici uniquement les séries liées au service `/metrics`, on retrouvera les mêmes séries pour les autres services (`/graph`, `/api/v1/query` etc...).
 
 <b>Résumé</b>
 
 ![Résumé format](./img/resume_format.png)
 
-Chaque série liée au calcul d'un quantile possède le libellé `quantile`. Prometheus est configuré par défaut pour récupérer les métriques toutes les 15 secondes, les valeurs des quantiles pour cet intervalle sont donc très proches de 15.
+On a une série par quantile. Par défaut, Prometheus récupère les métriques toutes les 15 secondes. Les valeurs sont ici toutes très proches de 15.
 
-Comme pour l'histogramme, deux séries contiennent la somme et le nombre de valeurs enregistrées.
+Comme pour l'histogramme, deux séries correspondent à la somme et au nombre de valeurs enregistrées.
 
-Les quantiles sont calculés par l'application cliente à chaque nouvel enregistrement.<br> 
-Pour obtenir leur valeur exacte, il faudrait garder en mémoire l'intégralité du jeu de données, ce qui est inenvisageable pour une application ayant une durée de vie importante.<br> 
-
+Les quantiles sont calculés par l'application cliente à chaque nouvel enregistrement. Pour obtenir leur valeur exacte, il faudrait garder en mémoire l'intégralité du jeu de données, ce qui n'est pas envisageable pour une application avec une durée de vie importante.<br>
 Un algorithme est utilisé pour éliminer certaines données au fil du temps. Les calculs des quantiles sont donc effectués en intégrant une marge d'erreur.
 
 ## Exposition des métriques
 
-Pour obtenir les métriques d'une application, on peut :
+Pour créer et exposer les métriques d'une application, on peut :
 
 - utiliser un exporter qui va venir s'intégrer à celle-ci.
 
-- déclarer ses propres métriques en ajoutant du code à l'application.<br> Prometheus fournit des libraries dans plusieurs langages pour les créer et les exporter.
+- déclarer ses propres métriques en ajoutant du code à l'application.<br> Prometheus fournit des libraries dans plusieurs langages à ce sujet.
 
-Les exporters permettent d'observer un système existant sans avoir à ajouter le moindre code.
+Un exporter permet d'observer un système existant sans avoir à ajouter le moindre code.
 
-* `Node exporter` expose les métriques d'un système Linux.
-* `JMX exporter` expose les métriques d'une application Java en se basant sur les données disponibles via JMX.
-* `PostgreSQL exporter` expose les métriques d'une base PostgreSQL
+* [`Node exporter`](https://github.com/prometheus/node_exporter) expose les métriques d'un système Linux.
+* [`JMX exporter`](https://github.com/prometheus/jmx_exporter) expose les métriques d'une application Java en se basant sur les données disponibles via JMX.
+* [`PostgreSQL exporter`](https://github.com/prometheus-community/postgres_exporter) expose les métriques d'une base de données PostgreSQL.
 
-À noter que le serveur Prometheus expose des métriques, il peut donc s'observer lui-même.
+Le serveur Prometheus expose également des métriques, il peut donc s'observer lui-même.
 
 ![Exporteur](./img/exporteur.png)
 
 ## Collecte des métriques
 
-Le fichier de configuration `prometheus.yml` permet de déclarer les applications à observer.
+Les applications à observer seront déclarées dans le fichier de configuration `prometheus.yml`.
 
 ```yaml
 global:
@@ -184,63 +178,51 @@ scrape_configs:
       - targets: ["localhost:9100"]
 ```
 
-`job_name` correspond au nom de l'application qui peut être déployée sur plusieurs instances présentes dans le champ `targets`.
+`job_name` représente le nom de l'application. Le tableau `targets` liste les instances sur laquelle l'application est déployée.
 
-Dans cet exemple, Prometheus collectera toutes les 15 secondes :
+Sur cet exemple, Prometheus collectera toutes les 15 secondes :
 - ses propres métriques => `http://localhost:9090/metrics` 
 - les métriques d'un serveur linux => `http://localhost:9100/metrics`
 
-Pour une utilisation plus poussée, il serait plus adéquat d'utiliser la découverte de service pour récupérer la liste des instances dynamiquement. 
+Pour une utilisation plus poussée, il sera préférable d'utiliser la découverte de service pour récupérer la liste des instances dynamiquement. 
 
-Prometheus enregistre les données retournées par le services http dans sa base sous forme de séries temporelles.<br>
+Une fois les données récupérées, Prometheus les enregistre dans sa base sous forme de séries temporelles.<br>
 
-```
-# HELP prometheus_http_requests_total Counter of HTTP requests.
-# TYPE prometheus_http_requests_total counter
-prometheus_http_requests_total{code="200",handler="/-/ready"} 3
-prometheus_http_requests_total{code="200",handler="/api/v1/query"} 1
-prometheus_http_requests_total{code="200",handler="/graph"} 1
-prometheus_http_requests_total{code="200",handler="/metrics"} 98
-prometheus_http_requests_total{code="302",handler="/"} 1
-```
+![Séries compteur](./img/series_compteur.png)
 
-Chaque ligne (hors commentaire) représente une nouvelle série temporelle, le compteur ci-dessus en aura donc 5. Prometheus ajoute automatiquement les libellés `node` et `instance` à chaque série.
-
-Toutes les 15 secondes un nouvel enregistrement (représenté par une date en millisecondes et une valeur) sera sauvegardé pour chaque série.<br>
+L'exemple précédent produira cinq séries dans Prometheus, les libellés `job` et `instance` seront automatiquement ajoutés à chacune d'entre elles lors de leur création. Toutes les 15 secondes un nouvel enregistrement (représenté par une valeur horodatée) sera inséré pour chaque série.<br>
 
 <ins>Représentation d'une série temporelle :</ins>
 
 ![Série temporelle](./img/serie_temporelle.png)
 
-Concernant la récupération des métriques, il est primordial de définir un intervalle de temps assez court afin de ne pas passer à côté certaines valeurs importantes, ce qui est particulèrement vrai pour une jauge dont la valeur peut augmenter ou diminuer.
+Il est primordial de définir un intervalle de temps assez court pour la récupération des métriques afin de ne pas passer à côté de valeurs importantes.
 
-Par défaut, Prometheus conservera les données pendant 15 jours, cette valeur est configurable au démarrage du serveur en utilisant l'option `--storage.tsdb.retention.time`.
+Par défaut, Prometheus conservera les données pendant 15 jours, cette valeur est configurable en utilisant l'option `--storage.tsdb.retention.time` lors du démarrage de Prometheus.
 
 ## Lecture des métriques
 
-La lecture des données est essentielle pour analyser la santé d'une application. C'est la partie la plus dure à appréhender, le langage PromQL (Prometheus Query Language) bien que très complet reste difficile à maîtriser.
+La lecture des données est essentielle pour analyser la santé d'une application. C'est également la partie la plus complexe à appréhender, le langage PromQL (Prometheus Query Language) bien que très complet reste difficile à maîtriser.
 
-L'API REST de Prometheus dispose d'un service pour évaluer une requête PromQL.
+L'exécution d'une requête PromQL dans Prometheus s'effectue au travers d'une API Rest. Un simple client http est donc suffisant pour lire les données enregistrées dans Prometheus.
 
 ![API Prometheus](./img/prometheus_api.png)
 
 ### API Query
 
-Le service `query` permet d'exécuter une requête qui peut se décliner en deux catégories.
+Le service Rest `query` permet d'exécuter une requête PromQL. Celle-ci peut se décliner en deux catégories.
 
 <b>1) <ins>requête à un instant précis</ins></b> (`instant_query`)
 
 ![Instant Query](./img/instant_query.png)
 
-Le résultat contient une seule valeur par série. On choisit l'élément le plus récent par rapport à l'instant d'évaluation.
+Le résultat contient une seule valeur par série. C'est la valeur la plus récente par rapport à l'instant d'évaluation qui est retournée.
 
 <ins>Appel REST</ins>
 
-**GET /api/query**
-* query=prometheus_http_requests_total
-* time=1682358304.676
+**GET /api/query?query=prometheus_http_requests_total&time=1682358304.676**
 
-*La date courante est utilisée si le paramètre time n'est pas renseigné.*
+*La date courante est utilisée si le paramètre time n'est pas fourni.*
 
 <pre>
 {
@@ -274,9 +256,7 @@ Le résultat contient une seule valeur par série. On choisit l'élément le plu
 }
 </pre>
 
-On obtient en résultat une liste de séries (nom + libellés), chacune associée à une seule valeur. `value` est représenté par deux éléments, le premier pour l'horadatage, le second pour la valeur.
-
-L'horodatage est égal à l'instant d'évaluation, il est donc identique tous les résultats.
+On obtient en résultat une liste de séries identifiées par un nom et des libellés. Chacune d'elles possède une seule valeur horodatée représenté par le champ `value`. L'horodatage est égal à la date d'évaluation (le paramètre `time`), il est donc identique pour tous les résultats.
 
 <ins>Affichage dans Prometheus</ins> (`http://localhost:9090/graph`)
 
@@ -287,13 +267,13 @@ L'horodatage est égal à l'instant d'évaluation, il est donc identique tous le
 
 ![Range Query](./img/range_query.png)
 
-Le résultat contient pour chaque série l'ensemble des valeurs présentes dans l'intervalle de temps donné.
+Le résultat contient pour chaque série l'ensemble des valeurs présentes dans l'intervalle de temps.
 
 <ins>Appel REST</ins>
 
-**GET /api/query**
-* query=prometheus_http_requests_total[1m]
-* time=1682778791.976
+**GET /api/query?query=prometheus_http_requests_total[1m]&time=1682778791.976**
+
+L'intervalle de temps est défini entre crochets.
 
 <pre>
 {
@@ -322,93 +302,94 @@ Le résultat contient pour chaque série l'ensemble des valeurs présentes dans 
 }
 </pre>
 
-On obtient également une liste de séries en résultat, sauf qu'ici l'ensemble des valeurs appartenant à l'intervalle sont retournées. `values` contient donc une liste d'éléménts de type `[date, valeur]`. Cette fois-ci, les dates corresponds aux temps d'enregistrement présents en base, elles ne seront donc pas forcément identiques pour chacune des séries.
+On obtient en résultat une liste de séries, l'ensemble des valeurs horodatées appartenant à l'intervalle sont retournées dans le champs `values`. Cette fois-ci, les dates correspondent aux temps d'enregistrement présents en base, elles pourront varier suivant les séries.
 
 <ins>Affichage dans Prometheus</ins> (`http://localhost:9090/graph`)
 
 ![Affichage Prometheus range query](./img/range_query_prometheus.png)
 ![Appel réseau range query](./img/range_query_network.png)
 
-Voyons maintenat quelques exemples utilisant des filtres et des fonctions d'aggrégation.
+### Filtre et Aggrégation
 
-<ins>Nombre de requêtes http pour le service /metrics ayant un code retour 200</ins>
+PromQL offre la possibilité de filtrer et d'aggréger les résultats. Les fonctions d'aggrégation (`sum`, `count`, `avg`, `min`, `max` etc...) s'appliquent uniquement à des requêtes de type `instant_query`.
 
-**prometheus_http_requests_total{handler="/metrics", code="200"}**
+Les exemples suivant s'appuie sur ce jeu de données :
 
-```
-prometheus_http_requests_total{code="200", handler="/metrics", instance="localhost:9090", job="prometheus"} 11
-```
+**prometheus_http_requests_total**
+
+![Jeu de données](./img/jeu_donnees.png)
+
+<ins>Nombre de requêtes http pour le service /metrics et le code retour 200</ins>
+
+**prometheus_http_requests_total{code="200", handler="/metrics"}**
+
+![Résultat filtre](./img/resultat_filter.png)
+
+Les filtres sont définis entre accolades, ils s'appliquent aux libellés de la série.
+
 <ins>Nombre de séries avec le nom prometheus_http_requests_total</ins>
 
 **count(prometheus_http_requests_total)**
-```
-{}  12
-```
+
+![Résultat count](./img/resultat_count.png)
+
+On compte ici le nombre de séries dont le nom est égal à  `prometheus_http_requests_total`. L'utilisation d'une fonction d'aggrégation supprime le nom et les libellés du résultat.
 
 <ins>Nombre de séries regroupées par code retour</ins>
 
 **count by (code) (prometheus_http_requests_total)**
-<br>ou<br>
+
+ou
+
 **count without (handler, instance, job) (prometheus_http_requests_total)**
-```
-{code="200"}  10
-{code="302"}  1
-{code="400"}  1
-```
-<ins>Nombre de requêtes http</ins>
+
+![Résultat count by](./img/resultat_count_by.png)
+
+Les mots-clés `by` et `without` permettent d'aggréger les données par groupe de libellés, ces derniers seront inclus dans le résultat.
+
+<ins>Somme du nombre de requêtes http</ins>
 
 **sum(prometheus_http_requests_total)**
-```
-{}  67
-```
 
-<ins>Nombre de requêtes http par code retour</ins>
+![Résultat sum](./img/resultat_sum.png)
+
+<ins>Somme du nombre de requêtes http par code retour</ins>
 
 **sum by code (prometheus_http_requests_total)**
-```
-{code="200"}  62
-{code="302"}  1
-{code="400"}  4
-```
 
-<ins>Les 3 séries ayant le plus grand nombre de requêtes http</ins>
-
-**topk(3, prometheus_http_requests_total)**
-```
-prometheus_http_requests_total{code="200", handler="/metrics", instance="localhost:9090", job="prometheus"} 79
-prometheus_http_requests_total{code="200", handler="/api/v1/query", instance="localhost:9090", job="prometheus"} 49
-prometheus_http_requests_total{code="200", handler="/api/v1/metadata", instance="localhost:9090", job="prometheus"} 14
-```
+![Résultat sum by](./img/resultat_sum_by.png)
 
 <ins>Nombre moyen de requêtes http par série</ins>
 
 **avg(prometheus_http_requests_total)**
-```
-{} 30.5
-```
 
-PromQL permet d'utiliser des opérateurs arithmétique.
+![Résultat avg](./img/resultat_avg.png)
 
-La moyenne obtenue précédemment correspond à cette opération :
+### Opération arithmétique
+
+Les opérateurs `+`, `-`, `*`, `/`, `%` et `^` peuvent être utilisées pour effectuer des opérations arithmétiques entre deux requêtes de type `instant_query`.
+
+La moyenne obtenue précédemment correspond à cette division :
 
 **sum(prometheus_http_requests_total) / count(prometheus_http_requests_total)**
 ```
 {} 30.5
 ```
 
-Pour obtenir un résultat, il faut qu'une ligne à gauche corresponde avec une ligne à droite. La correspondance s'effectue sur les libellés, le nom de la métrique est ignoré, d'ailleurs il n'est pas présent dans le résultat.
+Pour obtenir un résultat lors d'une opération arithmétique, il faut avoir une correspondance un à un, c'est à dire qu'une ligne à gauche doit correspondre avec une ligne à droite. <br>
+Cette correspondance s'applique sur les libellés, le nom de la métrique est ignoré, il n'est d'ailleurs pas présent dans le résultat.
 
 **go_gc_duration_seconds + go_gc_duration_seconds**
 
 // TODO, montrer la correspondance
 
-Il est possible de préciser sur quels libellés doivent être effectuées la correspondance lorsqu'il y a des différences.
+Par défaut la correspondance utilise tous les libellés, il est possible de préciser sur quels libellés doit être effectuée la correspondance en utilisant `on` ou `ignoring`.
 
 **go_gc_duration_seconds + on(instance, job, quantile) prometheus_engine_query_duration_seconds{slice="inner_eval"}**
 
 **go_gc_duration_seconds + ignoring(slice) prometheus_engine_query_duration_seconds{slice="inner_eval"}**
 
-Prenons un exemple plus complexe où nous souhaiterions déterminer la proportion de requêtes http pour chaque code retour.<br> Cette information permet de vérifier que la majorité des requêtes s'exécutent correctement.
+Nous allons écrire une requête un plus complexe qui déterminera la proportion de requêtes http par code retour.<br> Pour une application en bonne santé, on s'attend à ce que la majorité des requêtes exécutées aient un code retour égal à 200.
 
 <ins>Nombre de requêtes http par code, instance et job</ins>
 
@@ -420,14 +401,31 @@ Prenons un exemple plus complexe où nous souhaiterions déterminer la proportio
 {code="422", instance="localhost:9090", job="prometheus"} 3
 ```
 
+On regroupe également les résultats par instance et job dans l'hypothèse où prometheus pourrait être déployé sur plusieurs instances.
+
 <ins>Nombre de requêtes http par instance et job</ins>
 
 **sum by (instance, job) (prometheus_http_requests_total)**
 ```
 {instance="localhost:9090", job="prometheus"} 725
 ```
-Pour effectuer une division, on utilisera `on(instance, job)` pour faire correspondre les deux résultats mais cela n'est pas suffisant. <br>
-Nous avons ici une correspondance plusieurs pour un, c'est à dire que plusieurs lignes du premier résultat sont associées à une seule ligne du second résultat. Il faudra le préciser dans la requête en utilisant un `group_left`. 
+On a ici le nombre total de requêtes http par instance et pa job.
+
+Pour obtenir le résultat escompté, il faudra effectuer une division. L'utilisation de `on(instance, job)` permet de faire la correspondance sur les deux libellés en commun, cela n'est cependant pas suffisant.
+
+Nous avons ici une correspondance plusieurs pour un, c'est à dire que plusieurs lignes du premier résultat sont associées à une seule ligne du second résultat. Il faudra le préciser dans la requête PromQL en utilisant le mot-clé `group_left`.
+
+<ins>Proportion de requêtes http par code, instance et job</ins>
+
+**sum by (code, instance, job) (prometheus_http_requests_total) / on(instance, job) group_left sum by(instance, job) (prometheus_http_requests_total)**
+```
+{code="200", instance="localhost:9090", job="prometheus"} 98.03664921465969
+{code="302", instance="localhost:9090", job="prometheus"} 0.13089005235602094
+{code="400", instance="localhost:9090", job="prometheus"} 1.4397905759162304
+{code="422", instance="localhost:9090", job="prometheus"} 0.3926701570680628
+```
+
+Une opération arithmétique peut également être effectuée entre une série et un nombre. La multiplication de ces résultats par 100 nous donne un poucentage.
 
 <ins>Pourcentage de requêtes http par code, instance et job</ins>
 
@@ -439,9 +437,7 @@ Nous avons ici une correspondance plusieurs pour un, c'est à dire que plusieurs
 {code="422", instance="localhost:9090", job="prometheus"} 0.3926701570680628
 ```
 
-Une opération arithmétique peut également être effectuée entre une série et un nombre, c'est le cas ici avec une multiplication par cent pour obtenir un pourcentage. 98% des requêtes ont un code retour à 200, la majorité des requêtes s'exécutent correctement.
-
-Pour résumé, pour effectuer une opération arithmétique entre deux séries, il faut par défaut avoir une correspondance un pour un. Il est possible de faire cette opération avec une correspondance plusieurs pour un ou un pour plusieurs en utilisant respectivement `group_left` ou `group_right`. Une correspondance plusieurs pour plusieurs est en revanche interdite.
+Il est donc par défaut nécessaire d'avoir une correspondance un pour un entre deux séries pour effectuer une opération arithmétique. Une correspondance plusieurs pour un ou un pour plusieurs pourra être appliquée en utilisant respectivement `group_left` et `group_right`. En revanche, une correspondance plusieurs pour plusieurs est en interdite par Prometheus.
 
 // TODO montrer schéma.
 
