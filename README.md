@@ -214,27 +214,25 @@ Toutes les 15 secondes un nouvel enregistrement (représenté par une date en mi
 
 Concernant la récupération des métriques, il est primordial de définir un intervalle de temps assez court afin de ne pas passer à côté certaines valeurs importantes, ce qui est particulèrement vrai pour une jauge dont la valeur peut augmenter ou diminuer.
 
-Par défaut, Prometheus conservera les données pendant 15 jours, cette valeur est configuration en utilisant l'option `--storage.tsdb.retention.time` au démarrage du serveur.
+Par défaut, Prometheus conservera les données pendant 15 jours, cette valeur est configurable au démarrage du serveur en utilisant l'option `--storage.tsdb.retention.time`.
 
 ## Lecture des métriques
 
-La lecture des données est essentielle pour évaluer la santé de nos applications. C'est la partie la plus complexe à appréhender, le langage PromQL (Prometheus Query Language) bien que très puissant reste assez difficile à maîtriser.
+La lecture des données est essentielle pour analyser la santé d'une application. C'est la partie la plus dure à appréhender, le langage PromQL (Prometheus Query Language) bien que très complet reste difficile à maîtriser.
 
-L'évaluation des requêtes PromQL s'effectuera via des appels http sur l'API REST exposée par Prometheus.
+L'API REST de Prometheus dispose d'un service pour évaluer une requête PromQL.
 
 ![API Prometheus](./img/prometheus_api.png)
 
 ### API Query
 
-Le service `query` évalue une requête pour une date donnée.
+Le service `query` permet d'exécuter une requête qui peut se décliner en deux catégories.
 
-Il existe principalement deux types de requêtes dans Prometheus.
-
-<b>1) <ins>requête sur un moment précis</ins></b> (`instant_query`)
+<b>1) <ins>requête à un instant précis</ins></b> (`instant_query`)
 
 ![Instant Query](./img/instant_query.png)
 
-Le résultat contient une seule valeur par série. On choisit l'élément le plus récent par rapport à la date d'évaluation. 
+Le résultat contient une seule valeur par série. On choisit l'élément le plus récent par rapport à l'instant d'évaluation.
 
 <ins>Appel REST</ins>
 
@@ -276,9 +274,9 @@ Le résultat contient une seule valeur par série. On choisit l'élément le plu
 }
 </pre>
 
-`value` est un tableau contenent seulement deux éléments, le premier correspondant à l'horadatage et le second à la valeur.
+On obtient en résultat une liste de séries (nom + libellés), chacune associée à une seule valeur. `value` est représenté par deux éléments, le premier pour l'horadatage, le second pour la valeur.
 
-Le temps associé à chaque valeur sera égal à la date d'évaluation, la date réelle d'enregistrement n'est pas retournée. Toutes les valeurs présentes dans le résultat de la requête auront donc le même horadatage.
+L'horodatage est égal à l'instant d'évaluation, il est donc identique tous les résultats.
 
 <ins>Affichage dans Prometheus</ins> (`http://localhost:9090/graph`)
 
@@ -294,7 +292,7 @@ Le résultat contient pour chaque série l'ensemble des valeurs présentes dans 
 <ins>Appel REST</ins>
 
 **GET /api/query**
-* query=prometheus_http_requests_total [1m]
+* query=prometheus_http_requests_total[1m]
 * time=1682778791.976
 
 <pre>
@@ -324,35 +322,183 @@ Le résultat contient pour chaque série l'ensemble des valeurs présentes dans 
 }
 </pre>
 
-`values` est un tableau à deux dimensions contenant une liste de tuple sous la forme `[date, valeur]`. Cette fois-ci, les dates associées aux valeurs correspondent aux dates d'enregistrement présentes en base.
+On obtient également une liste de séries en résultat, sauf qu'ici l'ensemble des valeurs appartenant à l'intervalle sont retournées. `values` contient donc une liste d'éléménts de type `[date, valeur]`. Cette fois-ci, les dates corresponds aux temps d'enregistrement présents en base, elles ne seront donc pas forcément identiques pour chacune des séries.
 
 <ins>Affichage dans Prometheus</ins> (`http://localhost:9090/graph`)
 
 ![Affichage Prometheus range query](./img/range_query_prometheus.png)
 ![Appel réseau range query](./img/range_query_network.png)
 
-#### <ins>Filtre</ins>
+Voyons maintenat quelques exemples utilisant des filtres et des fonctions d'aggrégation.
 
-**prometheus_http_requests_total{handler="/metrics", code="200", job=~".\*theus"}**
+<ins>Nombre de requêtes http pour le service /metrics ayant un code retour 200</ins>
+
+**prometheus_http_requests_total{handler="/metrics", code="200"}**
 
 ```
 prometheus_http_requests_total{code="200", handler="/metrics", instance="localhost:9090", job="prometheus"} 11
 ```
-#### <ins>Aggrégation</ins>
+<ins>Nombre de séries avec le nom prometheus_http_requests_total</ins>
 
 **count(prometheus_http_requests_total)**
 ```
 {}  12
 ```
 
+<ins>Nombre de séries regroupées par code retour</ins>
+
 **count by (code) (prometheus_http_requests_total)**
+<br>ou<br>
+**count without (handler, instance, job) (prometheus_http_requests_total)**
 ```
 {code="200"}  10
 {code="302"}  1
 {code="400"}  1
 ```
+<ins>Nombre de requêtes http</ins>
 
 **sum(prometheus_http_requests_total)**
 ```
 {}  67
 ```
+
+<ins>Nombre de requêtes http par code retour</ins>
+
+**sum by code (prometheus_http_requests_total)**
+```
+{code="200"}  62
+{code="302"}  1
+{code="400"}  4
+```
+
+<ins>Les 3 séries ayant le plus grand nombre de requêtes http</ins>
+
+**topk(3, prometheus_http_requests_total)**
+```
+prometheus_http_requests_total{code="200", handler="/metrics", instance="localhost:9090", job="prometheus"} 79
+prometheus_http_requests_total{code="200", handler="/api/v1/query", instance="localhost:9090", job="prometheus"} 49
+prometheus_http_requests_total{code="200", handler="/api/v1/metadata", instance="localhost:9090", job="prometheus"} 14
+```
+
+<ins>Nombre moyen de requêtes http par série</ins>
+
+**avg(prometheus_http_requests_total)**
+```
+{} 30.5
+```
+
+PromQL permet d'utiliser des opérateurs arithmétique.
+
+La moyenne obtenue précédemment correspond à cette opération :
+
+**sum(prometheus_http_requests_total) / count(prometheus_http_requests_total)**
+```
+{} 30.5
+```
+
+Pour obtenir un résultat, il faut qu'une ligne à gauche corresponde avec une ligne à droite. La correspondance s'effectue sur les libellés, le nom de la métrique est ignoré, d'ailleurs il n'est pas présent dans le résultat.
+
+**go_gc_duration_seconds + go_gc_duration_seconds**
+
+// TODO, montrer la correspondance
+
+Il est possible de préciser sur quels libellés doivent être effectuées la correspondance lorsqu'il y a des différences.
+
+**go_gc_duration_seconds + on(instance, job, quantile) prometheus_engine_query_duration_seconds{slice="inner_eval"}**
+
+**go_gc_duration_seconds + ignoring(slice) prometheus_engine_query_duration_seconds{slice="inner_eval"}**
+
+Prenons un exemple plus complexe où nous souhaiterions déterminer la proportion de requêtes http pour chaque code retour.<br> Cette information permet de vérifier que la majorité des requêtes s'exécutent correctement.
+
+<ins>Nombre de requêtes http par code, instance et job</ins>
+
+**sum by (code, instance, job) (prometheus_http_requests_total)**
+```
+{code="200", instance="localhost:9090", job="prometheus"} 712
+{code="302", instance="localhost:9090", job="prometheus"} 1
+{code="400", instance="localhost:9090", job="prometheus"} 11
+{code="422", instance="localhost:9090", job="prometheus"} 3
+```
+
+<ins>Nombre de requêtes http par instance et job</ins>
+
+**sum by (instance, job) (prometheus_http_requests_total)**
+```
+{instance="localhost:9090", job="prometheus"} 725
+```
+Pour effectuer une division, on utilisera `on(instance, job)` pour faire correspondre les deux résultats mais cela n'est pas suffisant. <br>
+Nous avons ici une correspondance plusieurs pour un, c'est à dire que plusieurs lignes du premier résultat sont associées à une seule ligne du second résultat. Il faudra le préciser dans la requête en utilisant un `group_left`. 
+
+<ins>Pourcentage de requêtes http par code, instance et job</ins>
+
+**(sum by (code, instance, job) (prometheus_http_requests_total) / on(instance, job) group_left sum by(instance, job) (prometheus_http_requests_total)) * 100**
+```
+{code="200", instance="localhost:9090", job="prometheus"} 98.03664921465969
+{code="302", instance="localhost:9090", job="prometheus"} 0.13089005235602094
+{code="400", instance="localhost:9090", job="prometheus"} 1.4397905759162304
+{code="422", instance="localhost:9090", job="prometheus"} 0.3926701570680628
+```
+
+Une opération arithmétique peut également être effectuée entre une série et un nombre, c'est le cas ici avec une multiplication par cent pour obtenir un pourcentage. 98% des requêtes ont un code retour à 200, la majorité des requêtes s'exécutent correctement.
+
+Pour résumé, pour effectuer une opération arithmétique entre deux séries, il faut par défaut avoir une correspondance un pour un. Il est possible de faire cette opération avec une correspondance plusieurs pour un ou un pour plusieurs en utilisant respectivement `group_left` ou `group_right`. Une correspondance plusieurs pour plusieurs est en revanche interdite.
+
+// TODO montrer schéma.
+
+### Fonction Rate
+
+Le résultat précédent semble satisfaisant, il s'avère en réalité inexploitable pour déterminer la santé de l'application à un instant donné :
+
+* Sur une application démarrée depuis longtemps, si la majorité des requêtes s'est exécutée correctement, un problème d'exécution des requêtes sur les dernières minutes ne sera pas visible.
+
+// TODO montrer schéma
+
+* Si l'application redémarre, les compteurs seront réinitialisés à 0. Les données avant redémarrage ne sont pas utilisées par la requête.
+
+// TODO montrer schéma
+
+La fonction `rate` permet de résoudre cette problématique, ell calcule le taux d'accroissement par seconde d'un compteur sur une période donnée. 
+
+// TODO montrer schéma
+
+Cette fonction prend en paramètre un `range_vector` et retourne un `instant_vector`.
+
+En reprenant l'exemple précédent avec l'utilisation cette fois-ci de la fonction `rate` sur une période de 15 minutes, on obtient :
+
+<ins>requête 1</ins>
+
+**sum by (code, instance, job) (rate(prometheus_http_requests_total[15m]))**
+
+<ins>requête 2</ins>
+
+**sum by (instance, job) (rate(prometheus_http_requests_total[15m]))**
+
+<ins>requête finale</ins>
+
+**(sum by (code, instance, job) (rate(prometheus_http_requests_total[15m])) / on(instance, job) group_left sum by(instance, job) (rate(prometheus_http_requests_total[15m]))) * 100**
+
+Cette requête donne un indicateur sur l'exécution des requêtes dans les 15 dernières minutes. Le résultat obtenu reste fiable même en cas de redémarrage de l'application.
+
+L'utilisation de `rate` sera quasi systémtique dès lors que l'on manipule un compteur. Elle devra uniquement être utilisée sur une métrique dont la valeur augmente au cours du temps. L'utilisation de `rate` sur une jauge est inappropriée.
+
+Une fonction similaire `increase` qui mesure l'accroissement d'un comtpeur sur une période donnée en tenant compte d'un éventuel redémarrage.
+
+// TODO montrer schéma
+
+Pour une jauge on utilisera `delta` pour calculer la différentce ente deux points.
+
+### API Query Range
+
+Ce service évalue une requête pour un ensemble de dates sur un intervalle de temps. Il est principalement utilisé pour la construction de graphes.
+
+// Montrer schéma
+
+Ce service accepte uniquement des requêtes de type `instant_query`.
+
+=> différence et similitude entre `prometheus_http_requests_total{handler="/metrics"}` et `prometheus_http_requests_total{handler="/metrics"}[10m]`
+
+api_range évalue le résultat de la requête pour chacun des points de l'intervalle, la requête doit retourner obligatoire un chiffre. L'utilisation d'une requête de type `range_query` qui retourne un tableau n'est donc pas approprié.
+
+Comme je le disais la lecture des données dans Prometheus est extrèmement complexe. Maitriser le language PromQL nécessite de la pratique.
+
+=> Donner exemple de requête pour construire graphes dans Grafana.
