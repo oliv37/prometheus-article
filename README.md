@@ -309,59 +309,58 @@ On obtient en résultat une liste de séries, l'ensemble des valeurs horodatées
 ![Affichage Prometheus range query](./img/range_query_prometheus.png)
 ![Appel réseau range query](./img/range_query_network.png)
 
-### Filtre et Aggrégation
+### Filtre et Agrégation
 
-PromQL offre la possibilité de filtrer et d'aggréger les résultats. Les fonctions d'aggrégation (`sum`, `count`, `avg`, `min`, `max` etc...) s'appliquent uniquement à des requêtes de type `instant_query`.
+PromQL donne la possibilité de filtrer et d'agréger les résultats.<br> 
+Les fonctions d'agrégation (`sum`, `count`, `avg`, `min`, `max` etc...) s'appliquent uniquement aux requêtes de type `instant_query`.
 
-Les exemples suivant s'appuie sur ce jeu de données :
+Les exemples suivants s'appuient sur ce jeu de données :
 
-**prometheus_http_requests_total**
+> **prometheus_http_requests_total**<br>
+> Cette métrique enregistre le nombre de requêtes http par service et par code retour
 
 ![Jeu de données](./img/jeu_donnees.png)
 
-<ins>Nombre de requêtes http pour le service /metrics et le code retour 200</ins>
-
-**prometheus_http_requests_total{code="200", handler="/metrics"}**
+> **prometheus_http_requests_total{code="200", handler="/metrics"}**<br>
+> Nombre de requêtes http pour le service /metrics et le code retour 200<br>
 
 ![Résultat filtre](./img/resultat_filter.png)
 
 Les filtres sont définis entre accolades, ils s'appliquent aux libellés de la série.
 
-<ins>Nombre de séries avec le nom prometheus_http_requests_total</ins>
-
-**count(prometheus_http_requests_total)**
+> **count(prometheus_http_requests_total)**<br>
+> Nombre de séries ayant pour nom `prometheus_http_requests_total`
 
 ![Résultat count](./img/resultat_count.png)
 
-On compte ici le nombre de séries dont le nom est égal à  `prometheus_http_requests_total`. L'utilisation d'une fonction d'aggrégation supprime le nom et les libellés du résultat.
+L'utilisation d'une fonction d'agrégation retire le nom et les libellés du résultat.
 
-<ins>Nombre de séries regroupées par code retour</ins>
 
-**count by (code) (prometheus_http_requests_total)**
-
-ou
-
-**count without (handler, instance, job) (prometheus_http_requests_total)**
+> **count by (code) (prometheus_http_requests_total)**<br>
+> ou<br>
+> **count without (handler, instance, job) (prometheus_http_requests_total)**<br>
+> Nombre de séries par code retour
 
 ![Résultat count by](./img/resultat_count_by.png)
 
-Les mots-clés `by` et `without` permettent d'aggréger les données par groupe de libellés, ces derniers seront inclus dans le résultat.
+![Résultat count by 2](./img/resultat_count_by_2.png)
 
-<ins>Somme du nombre de requêtes http</ins>
+Les mots-clés `by` et `without` regroupent les données par libellés, ces derniers sont inclus dans le résultat.
 
-**sum(prometheus_http_requests_total)**
+> **sum(prometheus_http_requests_total)**<br>
+> Somme des requêtes http
 
 ![Résultat sum](./img/resultat_sum.png)
 
-<ins>Somme du nombre de requêtes http par code retour</ins>
-
-**sum by code (prometheus_http_requests_total)**
+> **sum by code (prometheus_http_requests_total)**<br>
+> Somme des requêtes http par code retour
 
 ![Résultat sum by](./img/resultat_sum_by.png)
 
-<ins>Nombre moyen de requêtes http par série</ins>
+![Résultat sum by 2](./img/resultat_sum_by_2.png)
 
-**avg(prometheus_http_requests_total)**
+> **avg(prometheus_http_requests_total)**<br>
+> Moyenne du nombre de requêtes http par série
 
 ![Résultat avg](./img/resultat_avg.png)
 
@@ -371,81 +370,58 @@ Les opérateurs `+`, `-`, `*`, `/`, `%` et `^` peuvent être utilisées pour eff
 
 La moyenne obtenue précédemment correspond à cette division :
 
-**sum(prometheus_http_requests_total) / count(prometheus_http_requests_total)**
-```
-{} 30.5
-```
+> **sum(prometheus_http_requests_total) / count(prometheus_http_requests_total)**
 
-Pour obtenir un résultat lors d'une opération arithmétique, il faut avoir une correspondance un à un, c'est à dire qu'une ligne à gauche doit correspondre avec une ligne à droite. <br>
-Cette correspondance s'applique sur les libellés, le nom de la métrique est ignoré, il n'est d'ailleurs pas présent dans le résultat.
+![Résultat avg](./img/resultat_avg.png)
 
-**go_gc_duration_seconds + go_gc_duration_seconds**
+Obtenir un résultat lors d'une opération arithmétique nécessite d'avoir une correspondance un pour un, c'est à dire qu'une ligne de la première requête correspond avec une ligne de la seconde. Cette correspondance s'effectue sur les libellés, les lignes qui n'ont pas de correspondances seront ignorées.
 
-// TODO, montrer la correspondance
+![Correspondance un pour un](./img/correspondance_un_pour_un.png)
 
-Par défaut la correspondance utilise tous les libellés, il est possible de préciser sur quels libellés doit être effectuée la correspondance en utilisant `on` ou `ignoring`.
+Lorsqu'il y a une différence de libellés, on peut utiliser `on` ou `ignoring` pour préciser sur lesquels se fait la correspondance.
 
-**go_gc_duration_seconds + on(instance, job, quantile) prometheus_engine_query_duration_seconds{slice="inner_eval"}**
+![Correspondance un pour un](./img/correspondance_un_pour_un_2.png)
 
-**go_gc_duration_seconds + ignoring(slice) prometheus_engine_query_duration_seconds{slice="inner_eval"}**
 
-Nous allons écrire une requête un plus complexe qui déterminera la proportion de requêtes http par code retour.<br> Pour une application en bonne santé, on s'attend à ce que la majorité des requêtes exécutées aient un code retour égal à 200.
+Le prochain exemple évaluera la proportion de requêtes http selon leur code retour. Sur une application en bonne santé, les requêtes avec un code retour à 200 seront majoritaires.
 
-<ins>Nombre de requêtes http par code, instance et job</ins>
+> **sum by (code, instance, job) (prometheus_http_requests_total)**<br>
+> Nombre de requêtes http par code, instance et job
 
-**sum by (code, instance, job) (prometheus_http_requests_total)**
-```
-{code="200", instance="localhost:9090", job="prometheus"} 712
-{code="302", instance="localhost:9090", job="prometheus"} 1
-{code="400", instance="localhost:9090", job="prometheus"} 11
-{code="422", instance="localhost:9090", job="prometheus"} 3
-```
+![Première requête](./img/proportion_resultat_requete_1.png)
 
-On regroupe également les résultats par instance et job dans l'hypothèse où prometheus pourrait être déployé sur plusieurs instances.
+On regroupe les résultats par code mais également par instance et job dans l'hypothèse où prometheus serait déployé sur une autre instance ou que le nom de métrique soit utilisé par un autre job.
 
-<ins>Nombre de requêtes http par instance et job</ins>
+> **sum by (instance, job) (prometheus_http_requests_total)**<br>
+> Nombre de requêtes http par instance et job
 
-**sum by (instance, job) (prometheus_http_requests_total)**
-```
-{instance="localhost:9090", job="prometheus"} 725
-```
-On a ici le nombre total de requêtes http par instance et pa job.
+![Première requête](./img/proportion_resultat_requete_2.png)
 
-Pour obtenir le résultat escompté, il faudra effectuer une division. L'utilisation de `on(instance, job)` permet de faire la correspondance sur les deux libellés en commun, cela n'est cependant pas suffisant.
+Une division sera necessaire pour obtenir le résultat escompté. L'utilisation de `on(instance, job)` permet de faire la correspondance sur ces deux libellés mais cela n'est pas suffisant car nous avons une correspondance plusieurs pour un.
 
-Nous avons ici une correspondance plusieurs pour un, c'est à dire que plusieurs lignes du premier résultat sont associées à une seule ligne du second résultat. Il faudra le préciser dans la requête PromQL en utilisant le mot-clé `group_left`.
+![Correspondance plusieurs pour un](./img/proportion_correspondance_plusieurs_pour_un.png)
 
-<ins>Proportion de requêtes http par code, instance et job</ins>
+Lors d'une correspondance plusieurs pour un, il est obligatoire d'utiliser le mot-clé `group_left`.
 
-**sum by (code, instance, job) (prometheus_http_requests_total) / on(instance, job) group_left sum by(instance, job) (prometheus_http_requests_total)**
-```
-{code="200", instance="localhost:9090", job="prometheus"} 98.03664921465969
-{code="302", instance="localhost:9090", job="prometheus"} 0.13089005235602094
-{code="400", instance="localhost:9090", job="prometheus"} 1.4397905759162304
-{code="422", instance="localhost:9090", job="prometheus"} 0.3926701570680628
-```
+> **sum by (code, instance, job) (prometheus_http_requests_total) / on(instance, job) group_left sum by(instance, job) (prometheus_http_requests_total)**
 
-Une opération arithmétique peut également être effectuée entre une série et un nombre. La multiplication de ces résultats par 100 nous donne un poucentage.
+![Résultat](./img/proportion_resultat_final_1.png)
 
-<ins>Pourcentage de requêtes http par code, instance et job</ins>
+Une opération arithmétique peut aussi s'effectuer entre une requête et un nombre. La multiplication par 100 nous donne un poucentage.
 
-**(sum by (code, instance, job) (prometheus_http_requests_total) / on(instance, job) group_left sum by(instance, job) (prometheus_http_requests_total)) * 100**
-```
-{code="200", instance="localhost:9090", job="prometheus"} 98.03664921465969
-{code="302", instance="localhost:9090", job="prometheus"} 0.13089005235602094
-{code="400", instance="localhost:9090", job="prometheus"} 1.4397905759162304
-{code="422", instance="localhost:9090", job="prometheus"} 0.3926701570680628
-```
+> **(sum by (code, instance, job) (prometheus_http_requests_total) / on(instance, job) group_left sum by(instance, job) (prometheus_http_requests_total)) * 100**<br>
 
-Il est donc par défaut nécessaire d'avoir une correspondance un pour un entre deux séries pour effectuer une opération arithmétique. Une correspondance plusieurs pour un ou un pour plusieurs pourra être appliquée en utilisant respectivement `group_left` et `group_right`. En revanche, une correspondance plusieurs pour plusieurs est en interdite par Prometheus.
+![Résultat en pourcentage](./img/proportion_resultat_final_2.png)
 
-// TODO montrer schéma.
+Au final, lors d'une opération arithmétique, une correspondance un pour un est appliquée par défaut. On peut utiliser les mots-clés `group_left` ou `group_right` pour appliquer respectivement une correspondance plusieurs pour un ou un pour plusieurs. Une correspondance plusieurs pour plusieurs n'est en revanche par autorisé par Prometheus.
+
+![Correspondance plusieurs pour plusieurs](./img/correspondance_plusieurs_pour_plusieurs.png)
 
 ### Fonction Rate
 
-Le résultat précédent semble satisfaisant, il s'avère en réalité inexploitable pour déterminer la santé de l'application à un instant donné :
+Le résultat précédent semble satisfaisant, il s'avère en réalité inutile pour évaluer la santé de l'application à un instant donné :
 
-* Sur une application démarrée depuis longtemps, si la majorité des requêtes s'est exécutée correctement, un problème d'exécution des requêtes sur les dernières minutes ne sera pas visible.
+* Sur une application démarrée depuis longtemps dont la majorité des requêtes a un code retour à 200, des erreurs d'exécution sur les dernières minutes passeront inaperçues en raison nombre élevé de requêtes jouées avec succès depuis le démarrage de l'application.
 
 // TODO montrer schéma
 
